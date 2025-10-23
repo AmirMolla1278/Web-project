@@ -3,12 +3,544 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>ClassVault DIU</title>
+    <link rel="stylesheet" href="./style.css">
 </head>
 <body>
-    <h2>Many student miss regular class for many incident and the result they cannot understand many topic which was covered in class  and they didn’t get accepted result in exam. classvault is a campus only web platform that bridges Note seeker and note taker . Note taker will create note and then they will upload in our website and then note seeker can easily access those note and as a appreciation they can give rating and comment if anything need to clarify .
+    <!-- Sign In Screen -->
+    <div id="signInScreen" class="screen active">
+        <div class="signin-container">
+            <div class="signin-content">
+                <div class="signin-header">
+                    <div class="app-icon">
+                        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <h1>ClassVault</h1>
+                    <p class="subtitle">Share knowledge, grow together</p>
+                </div>
 
-</h2>
-    
+                <div class="signin-card">
+                    <form id="signInForm">
+                        <div class="form-group">
+                            <label for="email">DIU Email Address</label>
+                            <input type="email" id="email" placeholder="your.name@diu.edu.bd" required>
+                            <span id="emailError" class="error-message"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-full">Sign In</button>
+                    </form>
+
+                    <div class="info-box">
+                        <p>Access your course notes and contribute to the DIU community</p>
+                    </div>
+                </div>
+
+                <p class="footer-text">Daffodil International University</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Home Screen -->
+    <div id="homeScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="menuBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <div class="logo-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                        <span>ClassVault</span>
+                    </div>
+                </div>
+                <button class="icon-btn" id="langBtn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="2" y1="12" x2="22" y2="12"></line>
+                        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                    </svg>
+                </button>
+            </div>
+        </nav>
+
+        <div class="page-content">
+            <div class="container">
+                <!-- Search -->
+                <div class="search-box">
+                    <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                    <input type="search" placeholder="Search courses, topics, or notes..." id="searchInput">
+                </div>
+
+                <!-- Courses -->
+                <section class="section">
+                    <div class="section-header">
+                        <h2>Your Courses</h2>
+                        <button class="link-btn">View All</button>
+                    </div>
+                    <div class="courses-scroll" id="coursesList"></div>
+                </section>
+
+                <!-- Top This Week -->
+                <section class="section">
+                    <div class="section-header">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                        <h2>Top This Week</h2>
+                    </div>
+                    <div class="notes-list" id="topNotesList"></div>
+                </section>
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <button class="action-card" id="requestsBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        <span>Browse Requests</span>
+                    </button>
+                    <button class="action-card" id="leaderboardBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                            <polyline points="17 6 23 6 23 12"></polyline>
+                        </svg>
+                        <span>Leaderboard</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button class="fab" id="uploadFab">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Course Page Screen -->
+    <div id="courseScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="courseBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <div class="logo-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                            </svg>
+                        </div>
+                        <span id="courseCode"></span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="course-header">
+            <h1 id="courseName"></h1>
+            <p id="courseSemester"></p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="notes">Notes</button>
+            <button class="tab" data-tab="requests">Requests</button>
+            <button class="tab" data-tab="contributors">Top Takers</button>
+        </div>
+
+        <div class="page-content">
+            <div class="container">
+                <div id="courseNotesTab" class="tab-content active"></div>
+                <div id="courseRequestsTab" class="tab-content"></div>
+                <div id="courseContributorsTab" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Note Detail Screen -->
+    <div id="noteDetailScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="noteBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <span>Note Details</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="page-content">
+            <div class="container" id="noteDetailContent"></div>
+        </div>
+    </div>
+
+    <!-- Upload Screen -->
+    <div id="uploadScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="uploadBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <span>Upload Notes</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="page-content">
+            <div class="container upload-container" id="uploadContent"></div>
+        </div>
+    </div>
+
+    <!-- Requests Screen -->
+    <div id="requestsScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="requestsBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <span>Note Requests</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="all" id="allRequestsTab">All</button>
+            <button class="tab" data-tab="open" id="openRequestsTab">Open</button>
+            <button class="tab" data-tab="fulfilled" id="fulfilledRequestsTab">Fulfilled</button>
+        </div>
+
+        <div class="page-content">
+            <div class="container" id="requestsList"></div>
+        </div>
+
+        <button class="fab" id="addRequestFab">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Leaderboard Screen -->
+    <div id="leaderboardScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="leaderboardBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <span>Leaderboard</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="leaderboard-header">
+            <div class="header-content">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                    <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                    <path d="M4 22h16"></path>
+                    <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                    <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                    <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+                <h1>Top Note Takers</h1>
+            </div>
+        </div>
+
+        <div class="podium" id="podium"></div>
+
+        <div class="page-content">
+            <div class="container" id="leaderboardList"></div>
+        </div>
+    </div>
+
+    <!-- Profile Screen -->
+    <div id="profileScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="profileBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <span>Profile</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="profile-header" id="profileHeader"></div>
+
+        <div class="tabs">
+            <button class="tab active" data-tab="uploads">Uploads</button>
+            <button class="tab" data-tab="activity">Activity</button>
+        </div>
+
+        <div class="page-content">
+            <div class="container">
+                <div id="profileUploadsTab" class="tab-content active"></div>
+                <div id="profileActivityTab" class="tab-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- About Us Screen -->
+    <div id="aboutScreen" class="screen">
+        <nav class="top-nav">
+            <div class="nav-content">
+                <div class="nav-left">
+                    <button class="icon-btn" id="aboutBackBtn">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="19" y1="12" x2="5" y2="12"></line>
+                            <polyline points="12 19 5 12 12 5"></polyline>
+                        </svg>
+                    </button>
+                    <div class="app-logo">
+                        <span>About Us</span>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="page-content">
+            <div class="container">
+                <!-- Header -->
+                <div class="about-header">
+                    <div class="app-icon" style="margin: 0 auto 16px;">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+                        </svg>
+                    </div>
+                    <h1 style="text-align: center; margin-bottom: 8px;">ClassVault DIU</h1>
+                    <p style="text-align: center; color: #6b7280; max-width: 500px; margin: 0 auto;">
+                        A platform built by students, for students. Share knowledge, collaborate, and grow together at Daffodil International University.
+                    </p>
+                </div>
+
+                <!-- Team Section -->
+                <section class="section">
+                    <h2 style="text-align: center; margin-bottom: 24px;">Meet Our Team</h2>
+                    
+                    <!-- Team Member 1 -->
+                    <div class="team-member-card">
+                        <img src="./img/ananto.png" alt="Ananto Paul" class="team-member-photo">
+                        <div class="team-member-info">
+                            <h3>Ananto Paul</h3>
+                            <p class="team-role">Team Leader & Developer</p>
+                            <p class="team-bio">Leading the development and architecture of ClassVault DIU, ensuring a seamless experience for all students.</p>
+                            <a href="mailto:anantopaul.cse@gmail.com" class="team-contact">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                                </svg>
+                                anantopaul.cse@gmail.com
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Team Member 2 -->
+                    <div class="team-member-card">
+                        <img src="./img/amir.png" alt="Md. Amir Molla" class="team-member-photo">
+                        <div class="team-member-info">
+                            <h3>Md. Amir Molla</h3>
+                            <p class="team-role">Frontend Developer</p>
+                            <p class="team-bio">Crafting beautiful and responsive user interfaces to make note sharing intuitive and enjoyable.</p>
+                            <a href="mailto:amirmolla7808@hotmail.com" class="team-contact">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                                </svg>
+                                amirmolla7808@hotmail.com
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Team Member 3 -->
+                    <div class="team-member-card">
+                        <img src="./img/supti.png" alt="Johura Ahmed" class="team-member-photo">
+                        <div class="team-member-info">
+                            <h3>Johura Ahmed</h3>
+                            <p class="team-role">UI/UX Designer & Frontend Developer</p>
+                            <p class="team-bio">Designing user-centered experiences and bringing them to life with clean, accessible code.</p>
+                            <a href="mailto:shupti22205101650@diu.edu.bd" class="team-contact">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+                                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"></path>
+                                </svg>
+                                shupti22205101650@diu.edu.bd
+                            </a>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Mission Section -->
+                <section class="section">
+                    <div class="card">
+                        <h3 style="margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+                                <path d="M12 2v20M2 12h20"></path>
+                            </svg>
+                            Our Mission
+                        </h3>
+                        <p style="color: #6b7280; line-height: 1.6;">
+                            To create a collaborative learning environment where DIU students can easily share, access, and benefit from quality educational resources. We believe in the power of peer-to-peer learning and community support.
+                        </p>
+                    </div>
+                </section>
+
+                <!-- Contact Section -->
+                <section class="section">
+                    <div class="card" style="text-align: center;">
+                        <h3 style="margin-bottom: 12px;">Get In Touch</h3>
+                        <p style="color: #6b7280; margin-bottom: 16px;">
+                            Have questions or feedback? We'd love to hear from you!
+                        </p>
+                        <a href="mailto:anantopaul.cse@gmail.com" class="btn btn-primary">
+                            Contact Us
+                        </a>
+                    </div>
+                </section>
+
+                <!-- Footer -->
+                <div style="text-align: center; padding: 24px 0; color: #6b7280; font-size: 14px;">
+                    <p>© 2025 ClassVault DIU</p>
+                    <p style="margin-top: 4px;">Daffodil International University</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation Drawer -->
+    <div id="navDrawer" class="drawer">
+        <div class="drawer-overlay"></div>
+        <div class="drawer-content">
+            <div class="drawer-header" id="drawerHeader"></div>
+            <nav class="drawer-nav">
+                <button class="drawer-item" data-page="home">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    <span>Home</span>
+                </button>
+                <button class="drawer-item" data-page="upload">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <span>Upload Notes</span>
+                </button>
+                <button class="drawer-item" data-page="requests">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                        <polyline points="14 2 14 8 20 8"></polyline>
+                        <line x1="12" y1="18" x2="12" y2="12"></line>
+                        <line x1="9" y1="15" x2="15" y2="15"></line>
+                    </svg>
+                    <span>Requests</span>
+                </button>
+                <button class="drawer-item" data-page="leaderboard">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                        <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                        <path d="M4 22h16"></path>
+                        <path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path>
+                        <path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path>
+                        <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                    </svg>
+                    <span>Leaderboard</span>
+                </button>
+                <button class="drawer-item" data-page="profile">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path>
+                        <circle cx="12" cy="7" r="4"></circle>
+                    </svg>
+                    <span>My Profile</span>
+                </button>
+                <button class="drawer-item" data-page="about">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 16v-4"></path>
+                        <path d="M12 8h.01"></path>
+                    </svg>
+                    <span>About Us</span>
+                </button>
+            </nav>
+            <div class="drawer-divider"></div>
+            <button class="drawer-item drawer-signout" id="signOutBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                    <polyline points="16 17 21 12 16 7"></polyline>
+                    <line x1="21" y1="12" x2="9" y2="12"></line>
+                </svg>
+                <span>Sign Out</span>
+            </button>
+            <div class="drawer-footer">
+                <p>ClassVault DIU v1.0</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Modals -->
+    <div id="modalOverlay" class="modal-overlay">
+        <div id="modalContent" class="modal"></div>
+    </div>
+
+    <script src="./data.js"></script>
+    <script src="./app.js"></script>
 </body>
 </html>
