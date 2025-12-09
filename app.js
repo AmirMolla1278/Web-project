@@ -7,6 +7,31 @@ const app = {
   currentData: null
 };
 
+let allCourses = [];
+let allNotes = [];
+let allUsers = [];
+let allRequests = [];
+
+async function fetchData() {
+  try {
+    const [coursesRes, notesRes, usersRes, requestsRes] = await Promise.all([
+      fetch('get_courses.php'),
+      fetch('get_notes.php'),
+      fetch('get_users.php'),
+      fetch('get_requests.php')
+    ]);
+
+    allCourses = await coursesRes.json();
+    allNotes = await notesRes.json();
+    allUsers = await usersRes.json();
+    allRequests = await requestsRes.json();
+
+  } catch (error) {
+    console.error("Error fetching data:", error);
+    showToast("Failed to load data from the server.", "error");
+  }
+}
+
 
 function showToast(message, type = 'success') {
   const toast = document.getElementById('toast');
@@ -45,9 +70,6 @@ function navigateTo(screen, data = null) {
   app.currentScreen = screen;
   app.currentData = data;
   showScreen(screen);
-  if (data) {
-    populateScreen(screen, data);
-  }
 }
 
 function navigateBack() {
@@ -74,25 +96,13 @@ function showScreen(screenName) {
   }
 }
 
-function populateScreen(screen, data) {
-  switch (screen) {
-    case 'course':
-      populateCourseScreen(data);
-      break;
-    case 'noteDetail':
-      populateNoteDetailScreen(data);
-      break;
-    case 'profile':
-      populateProfileScreen(data);
-      break;
-  }
-}
+
 
 // Screen Population Functions
 function populateHomeScreen() {
   // Populate courses
   const coursesList = document.getElementById('coursesList');
-  coursesList.innerHTML = mockCourses.slice(0, 5).map(course => `
+  coursesList.innerHTML = allCourses.slice(0, 5).map(course => `
     <div class="course-chip" data-course='${JSON.stringify(course)}'>
       <div class="course-chip-header">
         <span class="course-chip-code">${course.code}</span>
@@ -104,12 +114,13 @@ function populateHomeScreen() {
 
   // Populate top notes
   const topNotesList = document.getElementById('topNotesList');
-  topNotesList.innerHTML = mockNotes.slice(0, 3).map(note => createNoteCard(note)).join('');
+  const sortedNotes = [...allNotes].sort((a, b) => new Date(b.date) - new Date(a.date));
+  topNotesList.innerHTML = sortedNotes.slice(0, 3).map(note => createNoteCard(note)).join('');
 }
 
 function createNoteCard(note) {
   return `
-    <div class="note-card" data-note='${JSON.stringify(note)}'>
+    <div class="note-card" data-note-id='${note.id}'>
       <div class="note-card-header">
         <div style="flex: 1;">
           <div class="note-card-title">${note.title}</div>
@@ -128,7 +139,7 @@ function createNoteCard(note) {
           <svg class="star" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2">
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
           </svg>
-          <span>${note.rating.toFixed(1)}</span>
+          <span>${parseFloat(note.rating).toFixed(1)}</span>
           <span style="color: #6b7280; font-size: 12px;">(${note.totalRatings})</span>
         </div>
         <div class="note-card-downloads">
@@ -155,8 +166,12 @@ function populateCourseScreen(course) {
   document.getElementById('courseSemester').textContent = course.semester;
 
   // Filter notes for this course
-  const courseNotes = mockNotes.filter(note => note.courseCode === course.code);
-  const courseRequests = mockRequests.filter(req => req.courseCode === course.code);
+  const courseNotes = allNotes.filter(note => note.courseCode === course.code);
+  const courseRequests = allRequests.filter(req => req.courseCode === course.code);
+  
+  // Find users who have uploaded notes for this course
+  const contributorIds = new Set(courseNotes.map(note => note.uploadedBy.id));
+  const courseContributors = allUsers.filter(user => contributorIds.has(user.id));
 
   // Populate notes tab
   const notesTab = document.getElementById('courseNotesTab');
@@ -219,7 +234,7 @@ function populateCourseScreen(course) {
 
   // Populate contributors tab
   const contributorsTab = document.getElementById('courseContributorsTab');
-  contributorsTab.innerHTML = mockUsers.map((user, index) => `
+  contributorsTab.innerHTML = courseContributors.map((user, index) => `
     <div class="contributor-card" data-user='${JSON.stringify(user)}'>
       <div class="contributor-avatar-wrapper">
         <div class="avatar large">${getInitials(user.name)}</div>
@@ -250,8 +265,20 @@ function populateCourseScreen(course) {
   `).join('');
 }
 
-function populateNoteDetailScreen(note) {
+async function populateNoteDetailScreen(note) {
   const content = document.getElementById('noteDetailContent');
+  
+  // Fetch reviews for this note
+  let reviews = [];
+  try {
+    const res = await fetch(`get_reviews.php?noteId=${note.id}`);
+    reviews = await res.json();
+  } catch (error) {
+    console.error("Error fetching reviews:", error);
+  }
+
+  const uploader = allUsers.find(u => u.id === note.uploadedBy.id) || note.uploadedBy;
+
   content.innerHTML = `
     <div class="card">
       <div style="display: flex; gap: 12px; margin-bottom: 16px;">
@@ -271,7 +298,7 @@ function populateNoteDetailScreen(note) {
         <div>
           <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
             ${createStars(note.rating, false, 'sm')}
-            <span style="font-size: 14px;">${note.rating.toFixed(1)}</span>
+            <span style="font-size: 14px;">${parseFloat(note.rating).toFixed(1)}</span>
           </div>
           <p style="font-size: 12px; color: #6b7280;">${note.totalRatings} ratings</p>
         </div>
@@ -281,43 +308,30 @@ function populateNoteDetailScreen(note) {
         </div>
       </div>
 
-      <button class="btn btn-primary btn-full" onclick="showToast('Download started!')">
+      <button class="btn btn-primary btn-full" onclick='downloadNote(${JSON.stringify(note)})'>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
           <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
           <polyline points="7 10 12 15 17 10"></polyline>
           <line x1="12" y1="15" x2="12" y2="3"></line>
         </svg>
-        Download PDF
+        Open Google Drive Link
       </button>
-    </div>
-
-    <div class="card">
-      <h3 style="margin-bottom: 12px;">Preview</h3>
-      <div style="display: flex; align-items: center; justify-content: center; aspect-ratio: 3/4; background: #f9fafb; border: 2px dashed #e5e7eb; border-radius: 8px;">
-        <div style="text-align: center;">
-          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="margin: 0 auto 8px;">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-          </svg>
-          <p style="font-size: 14px; color: #6b7280;">PDF Preview</p>
-        </div>
-      </div>
     </div>
 
     <div class="card">
       <h3 style="margin-bottom: 12px;">Uploaded By</h3>
       <div style="display: flex; align-items: center; gap: 12px;">
-        <div class="avatar">${getInitials(note.uploadedBy.name)}</div>
+        <div class="avatar">${getInitials(uploader.name)}</div>
         <div style="flex: 1;">
-          <p style="margin-bottom: 4px;">${note.uploadedBy.name}</p>
+          <p style="margin-bottom: 4px;">${uploader.name}</p>
           <p style="font-size: 14px; color: #6b7280;">${new Date(note.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
         </div>
         <div style="text-align: right;">
           <div style="display: flex; align-items: center; gap: 4px; justify-content: flex-end;">
             <span class="star">★</span>
-            <span style="font-size: 14px;">${note.uploadedBy.averageRating.toFixed(1)}</span>
+            <span style="font-size: 14px;">${parseFloat(uploader.averageRating).toFixed(1)}</span>
           </div>
-          <p style="font-size: 12px; color: #6b7280;">${note.uploadedBy.totalUploads} uploads</p>
+          <p style="font-size: 12px; color: #6b7280;">${uploader.totalUploads} uploads</p>
         </div>
       </div>
     </div>
@@ -331,7 +345,7 @@ function populateNoteDetailScreen(note) {
       <button class="btn btn-primary btn-full" onclick="submitRating()">Submit Rating</button>
     </div>
 
-    ${note.reviews.length > 0 ? `
+    ${reviews.length > 0 ? `
       <div class="card">
         <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
@@ -339,14 +353,14 @@ function populateNoteDetailScreen(note) {
           </svg>
           <h3>Reviews</h3>
         </div>
-        ${note.reviews.map(review => `
+        ${reviews.map(review => `
           <div style="margin-bottom: 16px;">
             <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
               <div>
                 <p style="font-size: 14px; margin-bottom: 4px;">${review.userName}</p>
                 ${createStars(review.rating, false, 'sm')}
               </div>
-              <span style="font-size: 12px; color: #6b7280;">${formatDate(review.date)}</span>
+              <span style="font-size: 12px; color: #6b7280;">${formatDate(review.date_posted)}</span>
             </div>
             <p style="font-size: 14px; color: #6b7280; margin-bottom: 8px;">${review.comment}</p>
             <button class="link-btn" style="font-size: 12px;">
@@ -372,7 +386,7 @@ function populateProfileScreen(user) {
         <h1 class="profile-name">${user.name}</h1>
         <p class="profile-email">${user.email}</p>
         <div class="profile-badges">
-          ${user.badges.map(badge => `
+          ${(user.badges || []).map(badge => `
             <span class="badge badge-indigo">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 4px;">
                 <circle cx="12" cy="8" r="7"></circle>
@@ -422,7 +436,7 @@ function populateProfileScreen(user) {
   `;
 
   // Populate uploads tab
-  const userNotes = mockNotes.filter(note => note.uploadedBy.id === user.id);
+  const userNotes = allNotes.filter(note => note.uploadedBy.id === user.id);
   const uploadsTab = document.getElementById('profileUploadsTab');
   uploadsTab.innerHTML = userNotes.map(note => createNoteCard(note)).join('');
 
@@ -477,7 +491,8 @@ function populateProfileScreen(user) {
 function populateLeaderboardScreen() {
   // Populate podium
   const podium = document.getElementById('podium');
-  const topThree = [mockUsers[1], mockUsers[0], mockUsers[2]]; // 2nd, 1st, 3rd
+  const sortedUsers = [...allUsers].sort((a, b) => b.averageRating - a.averageRating);
+  const topThree = [sortedUsers[1], sortedUsers[0], sortedUsers[2]].filter(Boolean); // 2nd, 1st, 3rd
   const positions = ['second', 'first', 'third'];
   const crownColors = ['crown-silver', 'crown-gold', 'crown-bronze'];
   
@@ -510,7 +525,7 @@ function populateLeaderboardScreen() {
 
   // Populate full list
   const list = document.getElementById('leaderboardList');
-  list.innerHTML = mockUsers.map((user, index) => {
+  list.innerHTML = sortedUsers.map((user, index) => {
     const crownColor = index === 0 ? 'crown-gold' : index === 1 ? 'crown-silver' : index === 2 ? 'crown-bronze' : '';
     return `
       <div class="contributor-card" data-user='${JSON.stringify(user)}'>
@@ -530,7 +545,7 @@ function populateLeaderboardScreen() {
         <div class="contributor-info">
           <div class="contributor-name">
             <span>${user.name}</span>
-            ${user.badges.includes('Best Note Taker') ? '<span class="badge badge-indigo" style="font-size: 12px;">Best</span>' : ''}
+            ${(user.badges || []).includes('Best Note Taker') ? '<span class="badge badge-indigo" style="font-size: 12px;">Best</span>' : ''}
           </div>
           <p class="contributor-stats">${user.studentsHelped} students helped</p>
         </div>
@@ -554,17 +569,17 @@ function updateRequestsTabs() {
   const activeTab = document.querySelector('#requestsScreen .tab.active');
   const filter = activeTab ? activeTab.dataset.tab : 'all';
   
-  let requests = mockRequests;
+  let requests = allRequests;
   if (filter === 'open') {
-    requests = mockRequests.filter(r => !r.fulfilled);
+    requests = allRequests.filter(r => !r.fulfilled);
   } else if (filter === 'fulfilled') {
-    requests = mockRequests.filter(r => r.fulfilled);
+    requests = allRequests.filter(r => r.fulfilled);
   }
 
   // Update tab counts
-  document.getElementById('allRequestsTab').textContent = `All (${mockRequests.length})`;
-  document.getElementById('openRequestsTab').textContent = `Open (${mockRequests.filter(r => !r.fulfilled).length})`;
-  document.getElementById('fulfilledRequestsTab').textContent = `Fulfilled (${mockRequests.filter(r => r.fulfilled).length})`;
+  document.getElementById('allRequestsTab').textContent = `All (${allRequests.length})`;
+  document.getElementById('openRequestsTab').textContent = `Open (${allRequests.filter(r => !r.fulfilled).length})`;
+  document.getElementById('fulfilledRequestsTab').textContent = `Fulfilled (${allRequests.filter(r => r.fulfilled).length})`;
 
   const list = document.getElementById('requestsList');
   list.innerHTML = requests.map(req => `
@@ -573,10 +588,10 @@ function updateRequestsTabs() {
         <div class="request-title">
           <div class="request-badges">
             <span class="badge">${req.courseCode}</span>
-            ${req.fulfilled ? '<span class="badge badge-fulfilled">Fulfilled</span>' : '<span class="badge badge-open">Open</span>'}
+            ${req.fulfilled == 1 ? '<span class="badge badge-fulfilled">Fulfilled</span>' : '<span class="badge badge-open">Open</span>'}
           </div>
           <h3 style="margin: 8px 0 4px;">${req.topic}</h3>
-          <p style="font-size: 14px; color: #6b7280;">${req.courseName}</p>
+          <p style="font-size: 14px; color: #6b7280;">${allCourses.find(c => c.code === req.courseCode)?.name || ''}</p>
         </div>
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" style="flex-shrink: 0;">
           <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
@@ -588,201 +603,119 @@ function updateRequestsTabs() {
       <p class="request-description">${req.description}</p>
       <div class="request-footer">
         <span>Requested by ${req.requestedBy}</span>
-        <span>${formatDate(req.date)}</span>
+        <span>${formatDate(req.date_requested)}</span>
       </div>
-      ${!req.fulfilled ? '<button class="btn btn-outline" style="margin-top: 12px; width: 100%;" onclick="showToast(\'Upload flow would open here\')">Fulfill This Request</button>' : ''}
+      ${req.fulfilled == 0 ? '<button class="btn btn-outline" style="margin-top: 12px; width: 100%;" onclick="showToast(\'Upload flow would open here\')">Fulfill This Request</button>' : ''}
     </div>
   `).join('');
 }
 
-function populateUploadScreen(step = 1) {
+function populateUploadScreen() {
   const content = document.getElementById('uploadContent');
-  const state = app.uploadState || {
-    step: 1,
-    course: '',
-    title: '',
-    topic: '',
-    date: '',
-    file: null
-  };
 
-  if (step === 1) {
-    content.innerHTML = `
-      <div class="upload-progress">
-        <div class="progress-bar ${step >= 1 ? 'active' : ''}"></div>
-        <div class="progress-bar ${step >= 2 ? 'active' : ''}"></div>
-        <div class="progress-bar ${step >= 3 ? 'active' : ''}"></div>
+  content.innerHTML = `
+    <div class="upload-section">
+      <h2>Note Details</h2>
+      <div class="form-row">
+        <label>Course *</label>
+        <select id="uploadCourse">
+          <option value="">Select course</option>
+          ${allCourses.map(course => `
+            <option value="${course.code}">${course.code} - ${course.name}</option>
+          `).join('')}
+        </select>
       </div>
+      <div class="form-row">
+        <label>Note Title *</label>
+        <input type="text" id="uploadTitle" placeholder="e.g., SQL Queries & Normalization">
+      </div>
+      <div class="form-row">
+        <label>Topic *</label>
+        <input type="text" id="uploadTopic" placeholder="e.g., Database Design">
+      </div>
+      <div class="form-row">
+        <label>Date *</label>
+        <input type="date" id="uploadDate">
+      </div>
+      <div class="form-row">
+        <label>Google Drive Link *</label>
+        <input type="text" id="uploadDriveLink" placeholder="e.g., https://docs.google.com/document/d/...">
+      </div>
+      <button class="btn btn-primary btn-full" onclick="uploadPublish()">Publish Notes</button>
+    </div>
 
-      <div class="upload-section">
-        <h2>Note Details</h2>
-        <div class="form-row">
-          <label>Course *</label>
-          <select id="uploadCourse">
-            <option value="">Select course</option>
-            ${mockCourses.map(course => `
-              <option value="${course.code}">${course.code} - ${course.name}</option>
-            `).join('')}
-          </select>
-        </div>
-        <div class="form-row">
-          <label>Note Title *</label>
-          <input type="text" id="uploadTitle" placeholder="e.g., SQL Queries & Normalization">
-        </div>
-        <div class="form-row">
-          <label>Topic *</label>
-          <input type="text" id="uploadTopic" placeholder="e.g., Database Design">
-        </div>
-        <div class="form-row">
-          <label>Date *</label>
-          <input type="date" id="uploadDate">
-        </div>
-        <button class="btn btn-primary btn-full" onclick="uploadStep1Next()">Continue</button>
-      </div>
-
-      <div class="tips-box">
-        <h3>Tips for better notes</h3>
-        <ul>
-          <li>• Use clear, descriptive titles</li>
-          <li>• Ensure handwriting is legible</li>
-          <li>• Include relevant diagrams and examples</li>
-          <li>• Verify all information is accurate</li>
-        </ul>
-      </div>
-    `;
-  } else if (step === 2) {
-    content.innerHTML = `
-      <div class="upload-progress">
-        <div class="progress-bar active"></div>
-        <div class="progress-bar active"></div>
-        <div class="progress-bar"></div>
-      </div>
-
-      <div class="upload-section">
-        <h2>Upload File</h2>
-        ${!state.file ? `
-          <label class="file-upload" id="fileUploadLabel">
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <p style="margin-bottom: 4px;">Click to upload</p>
-            <p style="font-size: 14px; color: #6b7280;">PDF or Image files only</p>
-            <input type="file" id="fileInput" accept=".pdf,image/*" style="display: none;">
-          </label>
-        ` : `
-          <div class="file-preview">
-            <div class="file-info">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-              </svg>
-              <div class="file-details">
-                <p>${state.file.name}</p>
-                <p>${(state.file.size / 1024 / 1024).toFixed(2)} MB</p>
-              </div>
-            </div>
-            <button class="icon-btn" onclick="uploadRemoveFile()">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-        `}
-      </div>
-    `;
-  } else if (step === 3) {
-    content.innerHTML = `
-      <div class="upload-progress">
-        <div class="progress-bar active"></div>
-        <div class="progress-bar active"></div>
-        <div class="progress-bar active"></div>
-      </div>
-
-      <div class="upload-section">
-        <h2>Preview & Publish</h2>
-        <div class="preview-summary">
-          <div class="summary-row">
-            <span class="summary-label">Course:</span>
-            <span class="summary-value">${state.course}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">Title:</span>
-            <span class="summary-value">${state.title}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">Topic:</span>
-            <span class="summary-value">${state.topic}</span>
-          </div>
-          <div class="summary-row">
-            <span class="summary-label">Date:</span>
-            <span class="summary-value">${new Date(state.date).toLocaleDateString()}</span>
-          </div>
-        </div>
-
-        <div class="preview-box">
-          <div>
-            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-            </svg>
-            <p style="font-size: 14px; color: #6b7280;">${state.file.name}</p>
-          </div>
-        </div>
-
-        <div class="btn-group">
-          <button class="btn btn-outline" onclick="populateUploadScreen(2)">Back</button>
-          <button class="btn btn-primary" onclick="uploadPublish()">Publish Notes</button>
-        </div>
-      </div>
-    `;
-  }
+    <div class="tips-box">
+      <h3>Tips for better notes</h3>
+      <ul>
+        <li>• Use clear, descriptive titles</li>
+        <li>• Ensure your Google Drive link is public</li>
+        <li>• Include relevant diagrams and examples</li>
+        <li>• Verify all information is accurate</li>
+      </ul>
+    </div>
+  `;
 }
 
-// Upload Functions
-function uploadStep1Next() {
+async function uploadPublish() {
   const course = document.getElementById('uploadCourse').value;
   const title = document.getElementById('uploadTitle').value;
   const topic = document.getElementById('uploadTopic').value;
   const date = document.getElementById('uploadDate').value;
+  const driveLink = document.getElementById('uploadDriveLink').value;
+  const userId = app.currentUser.id;
 
-  if (!course || !title || !topic || !date) {
+  if (!course || !title || !topic || !date || !driveLink) {
     showToast('Please fill all required fields', 'error');
     return;
   }
 
-  app.uploadState = { step: 2, course, title, topic, date, file: null };
-  populateUploadScreen(2);
+  const formData = new FormData();
+  formData.append('course', course);
+  formData.append('title', title);
+  formData.append('topic', topic);
+  formData.append('date', date);
+  formData.append('userId', userId);
+  formData.append('driveLink', driveLink);
 
-  // Add file input listener
-  setTimeout(() => {
-    const fileInput = document.getElementById('fileInput');
-    const fileLabel = document.getElementById('fileUploadLabel');
-    if (fileInput && fileLabel) {
-      fileLabel.onclick = () => fileInput.click();
-      fileInput.onchange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-          app.uploadState.file = file;
-          app.uploadState.step = 3;
-          populateUploadScreen(3);
-        }
-      };
+  try {
+    const response = await fetch('upload.php', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (result.success) {
+      showToast('Note added successfully!');
+      // Refresh data and navigate back
+      await fetchData();
+      navigateBack();
+    } else {
+      showToast(`Failed to add note: ${result.message}`, 'error');
     }
-  }, 100);
+  } catch (error) {
+    console.error('Error adding note:', error);
+    showToast('An error occurred while adding the note.', 'error');
+  }
 }
 
-function uploadRemoveFile() {
-  app.uploadState.file = null;
-  app.uploadState.step = 2;
-  populateUploadScreen(2);
-}
+async function downloadNote(note) {
+  // Update download count
+  try {
+    const formData = new FormData();
+    formData.append('noteId', note.id);
+    await fetch('update_download_count.php', {
+      method: 'POST',
+      body: formData
+    });
+    // We don't need to wait for this to finish
+  } catch (error) {
+    console.error('Error updating download count:', error);
+  }
 
-function uploadPublish() {
-  showToast('Notes uploaded successfully!');
-  setTimeout(() => navigateBack(), 1000);
+  // Open the Google Drive link in a new tab
+  window.open(note.driveLink, '_blank');
+  showToast('Opening Google Drive link...');
 }
 
 function submitRating() {
@@ -797,10 +730,25 @@ function submitRating() {
   showToast('Rating submitted successfully!');
 }
 
+function updateDrawerHeader() {
+  const drawerHeader = document.getElementById('drawerHeader');
+  if (app.currentUser) {
+    drawerHeader.innerHTML = `
+      <div class="drawer-user">
+        <div class="avatar">${getInitials(app.currentUser.name)}</div>
+        <h2 class="drawer-user-name">${app.currentUser.name}</h2>
+        <p class="drawer-user-email">${app.currentUser.email}</p>
+      </div>
+    `;
+  } else {
+    drawerHeader.innerHTML = '';
+  }
+}
+
 // Event Listeners
 function initializeEventListeners() {
   // Sign In
-  document.getElementById('signInForm').addEventListener('submit', (e) => {
+  document.getElementById('signInForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const email = document.getElementById('email').value;
     const errorElement = document.getElementById('emailError');
@@ -810,10 +758,46 @@ function initializeEventListeners() {
       return;
     }
 
-    app.isSignedIn = true;
-    app.currentUser = mockUsers[0];
-    showScreen('home');
-    populateHomeScreen();
+    await fetchData();
+
+    let user = allUsers.find(u => u.email === email);
+
+    if (user) {
+      app.isSignedIn = true;
+      app.currentUser = user;
+      showScreen('home');
+      populateHomeScreen();
+      updateDrawerHeader();
+    } else {
+      // Register the new user
+      const name = email.split('@')[0].replace('.', ' ').replace(/\b\w/g, l => l.toUpperCase());
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('name', name);
+
+      try {
+        const response = await fetch('register_user.php', {
+          method: 'POST',
+          body: formData
+        });
+        const result = await response.json();
+
+        if (result.success) {
+          user = result.user;
+          allUsers.push(user);
+          app.isSignedIn = true;
+          app.currentUser = user;
+          showScreen('home');
+          populateHomeScreen();
+          updateDrawerHeader();
+        } else {
+          showToast(`Registration failed: ${result.message}`, 'error');
+        }
+      } catch (error) {
+        console.error('Error registering user:', error);
+        showToast('An error occurred during registration.', 'error');
+      }
+    }
   });
 
   // Menu Button
@@ -828,18 +812,16 @@ function initializeEventListeners() {
 
   // Drawer Navigation
   document.querySelectorAll('.drawer-item[data-page]').forEach(item => {
-    item.addEventListener('click', () => {
+    item.addEventListener('click', async () => {
       const page = item.dataset.page;
       document.getElementById('navDrawer').classList.remove('open');
       
       if (page === 'home') {
-        app.history = [];
         navigateTo('home');
         populateHomeScreen();
       } else if (page === 'upload') {
-        app.uploadState = { step: 1 };
         navigateTo('upload');
-        populateUploadScreen(1);
+        populateUploadScreen();
       } else if (page === 'requests') {
         navigateTo('requests');
         populateRequestsScreen();
@@ -848,6 +830,7 @@ function initializeEventListeners() {
         populateLeaderboardScreen();
       } else if (page === 'profile') {
         navigateTo('profile', app.currentUser);
+        populateProfileScreen(app.currentUser);
       } else if (page === 'about') {
         navigateTo('about');
       }
@@ -874,9 +857,8 @@ function initializeEventListeners() {
 
   // FABs
   document.getElementById('uploadFab').addEventListener('click', () => {
-    app.uploadState = { step: 1 };
     navigateTo('upload');
-    populateUploadScreen(1);
+    populateUploadScreen();
   });
 
   document.getElementById('requestsBtn').addEventListener('click', () => {
@@ -893,16 +875,7 @@ function initializeEventListeners() {
     showToast('Create request modal would open here');
   });
 
-  // Drawer header
-  const drawerHeader = document.getElementById('drawerHeader');
-  const currentUser = mockUsers[0];
-  drawerHeader.innerHTML = `
-    <div class="drawer-user">
-      <div class="avatar">${getInitials(currentUser.name)}</div>
-      <h2 class="drawer-user-name">${currentUser.name}</h2>
-      <p class="drawer-user-email">${currentUser.email}</p>
-    </div>
-  `;
+
 
   
   document.body.addEventListener('click', (e) => {
@@ -911,20 +884,29 @@ function initializeEventListeners() {
     if (courseChip) {
       const course = JSON.parse(courseChip.dataset.course);
       navigateTo('course', course);
+      populateCourseScreen(course);
     }
 
   
     const noteCard = e.target.closest('.note-card');
     if (noteCard) {
-      const note = JSON.parse(noteCard.dataset.note);
-      navigateTo('noteDetail', note);
+      const noteId = noteCard.dataset.noteId;
+      const note = allNotes.find(n => n.id === noteId);
+      if (note) {
+        navigateTo('noteDetail', note);
+        populateNoteDetailScreen(note);
+      }
     }
 
  
     const contributorCard = e.target.closest('.contributor-card');
     if (contributorCard) {
-      const user = JSON.parse(contributorCard.dataset.user);
-      navigateTo('profile', user);
+      const userId = JSON.parse(contributorCard.dataset.user).id;
+      const user = allUsers.find(u => u.id === userId);
+      if (user) {
+        navigateTo('profile', user);
+        populateProfileScreen(user);
+      }
     }
 
 

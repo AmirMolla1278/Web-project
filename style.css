@@ -1201,22 +1201,7 @@ input, textarea, select {
     margin: 0 auto;
 }
 
-.upload-progress {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 24px;
-}
 
-.progress-bar {
-    flex: 1;
-    height: 8px;
-    background: #e5e7eb;
-    border-radius: 4px;
-}
-
-.progress-bar.active {
-    background: #4f46e5;
-}
 
 .upload-section {
     background: white;
@@ -1262,98 +1247,7 @@ input, textarea, select {
     border-color: #4f46e5;
 }
 
-.file-upload {
-    border: 2px dashed #d1d5db;
-    border-radius: 8px;
-    padding: 48px 24px;
-    text-align: center;
-    cursor: pointer;
-    transition: all 0.2s;
-}
 
-.file-upload:hover {
-    border-color: #818cf8;
-    background: #eef2ff;
-}
-
-.file-upload svg {
-    color: #9ca3af;
-    margin-bottom: 12px;
-}
-
-.file-preview {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px;
-    background: white;
-    border: 1px solid #e5e7eb;
-    border-radius: 8px;
-}
-
-.file-info {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.file-info svg {
-    color: #4f46e5;
-}
-
-.file-details p:first-child {
-    font-size: 14px;
-    margin-bottom: 4px;
-}
-
-.file-details p:last-child {
-    font-size: 12px;
-    color: #6b7280;
-}
-
-.preview-summary {
-    padding: 16px;
-    background: #f9fafb;
-    border-radius: 8px;
-    margin-bottom: 24px;
-}
-
-.summary-row {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 12px;
-}
-
-.summary-row:last-child {
-    margin-bottom: 0;
-}
-
-.summary-label {
-    font-size: 14px;
-    color: #6b7280;
-}
-
-.summary-value {
-    font-size: 14px;
-    color: #1f2937;
-}
-
-.preview-box {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 3/4;
-    background: #f9fafb;
-    border: 2px dashed #e5e7eb;
-    border-radius: 8px;
-    margin-bottom: 24px;
-    text-align: center;
-}
-
-.preview-box svg {
-    color: #9ca3af;
-    margin-bottom: 8px;
-}
 
 .btn-group {
     display: flex;
